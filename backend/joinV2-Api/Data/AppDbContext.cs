@@ -11,6 +11,7 @@ namespace joinV2_Api.Data
     public DbSet<Contact> Contacts { get; set; }
     public DbSet<Subtask> Subtasks { get; set; }
     public DbSet<TaskAssignment> TaskAssignments { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
