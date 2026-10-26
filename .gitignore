@@ -46,3 +46,9 @@ Thumbs.db
 # Environment files
 /src/environments/environment.ts
 /src/environments/environment.development.ts
+
+# .NET / Visual Studio
+.vs/
+bin/
+obj/
+appsettings.Development.json
