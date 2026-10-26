@@ -9,6 +9,7 @@ namespace joinV2_Api.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
+  [Authorize]
   public class TasksController : ControllerBase
   {
     private readonly AppDbContext _context;

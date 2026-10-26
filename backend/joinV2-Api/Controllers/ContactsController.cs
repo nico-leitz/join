@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using joinV2_Api.Data;
 using joinV2_Api.Models;
 using joinV2_Api.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace joinV2_Api.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
+  [Authorize]
   public class ContactsController : ControllerBase
   {
     private readonly AppDbContext _context;
