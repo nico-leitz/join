@@ -1,99 +1,103 @@
-import { Contact, ContactRow } from '../models/contact.model';
-import { Subtask, SubtaskRow } from '../models/subtask.model';
-import { Task, TaskRow } from '../models/task.model';
+import { Contact } from '../models/contact.model';
+import { Subtask } from '../models/subtask.model';
+import { Task, TaskPriority, TaskCategory, TaskStatus } from '../models/task.model';
 
-/**
- * Represents a contact relation returned by a task assignment query.
- */
-export interface TaskContactRelationRow {
-  /** Related contact row or null when the relation cannot be resolved. */
-  contacts: ContactRow | null;
+export interface CsTaskDto {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string | null;
+  priority: TaskPriority; 
+  category: TaskCategory;
+  status: TaskStatus;
+  sortOrder: number;
+  authUserId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/**
- * Maps task database rows to application task models.
- * @param taskRows - Database rows to map.
- * @returns Mapped application task models.
- */
-export function mapTaskRows(taskRows: TaskRow[]): Task[] {
-  return taskRows.map((taskRow) => mapTaskRow(taskRow));
+export interface CsSubtaskDto {
+  id: string;
+  taskId: string;
+  title: string;
+  isCompleted: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/**
- * Maps a task database row to an application task model.
- * @param taskRow - Database row to map.
- * @returns Mapped application task.
- */
-export function mapTaskRow(taskRow: TaskRow): Task {
+export interface CsContactDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  badgeColor: string;
+  authUserId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskContactRelationDto {
+  contacts?: CsContactDto | null;
+  contact?: CsContactDto | null;
+}
+
+export function mapTaskRows(taskRows: CsTaskDto[]): Task[] {
+  if (!taskRows) return [];
+  return taskRows.map(mapTaskRow);
+}
+
+export function mapTaskRow(taskRow: CsTaskDto): Task {
   return {
     id: taskRow.id,
     title: taskRow.title,
     description: taskRow.description,
-    dueDate: taskRow.due_date,
+    dueDate: taskRow.dueDate ? taskRow.dueDate.split('T')[0] : '',
     priority: taskRow.priority,
     category: taskRow.category,
     status: taskRow.status,
-    sortOrder: taskRow.sort_order,
-    createdAt: taskRow.created_at,
-    updatedAt: taskRow.updated_at,
+    sortOrder: taskRow.sortOrder ?? 1,
+    createdAt: taskRow.createdAt,
+    updatedAt: taskRow.updatedAt,
   };
 }
 
-/**
- * Maps subtask database rows to application subtask models.
- * @param subtaskRows - Database rows to map.
- * @returns Mapped application subtask models.
- */
-export function mapSubtaskRows(subtaskRows: SubtaskRow[]): Subtask[] {
-  return subtaskRows.map((subtaskRow) => mapSubtaskRow(subtaskRow));
+export function mapSubtaskRows(subtaskRows: CsSubtaskDto[]): Subtask[] {
+  if (!subtaskRows) return [];
+  return subtaskRows.map(mapSubtaskRow);
 }
 
-/**
- * Maps a subtask database row to an application subtask model.
- * @param subtaskRow - Database row to map.
- * @returns Mapped application subtask.
- */
-export function mapSubtaskRow(subtaskRow: SubtaskRow): Subtask {
+export function mapSubtaskRow(subtaskRow: CsSubtaskDto): Subtask {
   return {
     id: subtaskRow.id,
-    taskId: subtaskRow.task_id,
+    taskId: subtaskRow.taskId,
     title: subtaskRow.title,
-    isCompleted: subtaskRow.is_completed,
-    sortOrder: subtaskRow.sort_order,
-    createdAt: subtaskRow.created_at,
-    updatedAt: subtaskRow.updated_at,
+    isCompleted: subtaskRow.isCompleted ?? false,
+    sortOrder: subtaskRow.sortOrder ?? 1,
+    createdAt: subtaskRow.createdAt,
+    updatedAt: subtaskRow.updatedAt,
   };
 }
 
-/**
- * Extracts and maps valid contacts from task assignment relations.
- * @param relations - Contact relations returned by Supabase.
- * @returns Mapped contacts without unresolved relations.
- */
-export function mapContactRelations(
-  relations: TaskContactRelationRow[],
-): Contact[] {
+export function mapContactRelations(relations: TaskContactRelationDto[]): Contact[] {
+  if (!relations) return [];
   return relations
-    .map((relation) => relation.contacts)
-    .filter((contact): contact is ContactRow => contact !== null)
-    .map((contact) => mapContactRow(contact));
+    .map((relation) => relation.contacts ?? relation.contact)
+    .filter((contact): contact is CsContactDto => contact !== null && contact !== undefined)
+    .map(mapContactRow);
 }
 
-/**
- * Maps a contact database row to an application contact model.
- * @param contactRow - Database row to map.
- * @returns Mapped application contact.
- */
-function mapContactRow(contactRow: ContactRow): Contact {
+export function mapContactRow(contactRow: CsContactDto): Contact {
   return {
     id: contactRow.id,
-    firstName: contactRow.first_name,
-    lastName: contactRow.last_name,
+    firstName: contactRow.firstName,
+    lastName: contactRow.lastName,
     email: contactRow.email,
     phone: contactRow.phone,
-    badgeColor: contactRow.badge_color,
-    authUserId: contactRow.auth_user_id,
-    createdAt: contactRow.created_at,
-    updatedAt: contactRow.updated_at,
+    badgeColor: contactRow.badgeColor,
+    authUserId: contactRow.authUserId,
+    createdAt: contactRow.createdAt,
+    updatedAt: contactRow.updatedAt,
   };
 }

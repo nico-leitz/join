@@ -4,82 +4,82 @@ import { CreateTask, TaskRow, UpdateTask } from '../models/task.model';
 
 /**
  * Creates a database payload for inserting a task.
- * @param task - Task data to transform.
+ * @param task Task data to transform.
  * @returns Normalized task insert payload.
  */
-export function createTaskInsertPayload(task: CreateTask): Partial<TaskRow> {
+export function createTaskInsertPayload(task: CreateTask): any {
   return {
     title: task.title.trim(),
     description: task.description?.trim() ?? '',
-    due_date: task.dueDate,
+    dueDate: task.dueDate,
     category: task.category,
     ...(task.priority !== undefined && { priority: task.priority }),
     ...(task.status !== undefined && { status: task.status }),
-    ...(task.sortOrder !== undefined && { sort_order: task.sortOrder }),
+    ...(task.sortOrder !== undefined && { sortOrder: task.sortOrder }),
   };
 }
 
 /**
  * Creates a database payload containing the provided task updates.
- * @param task - Task fields to update.
+ * @param task Task fields to update.
  * @returns Normalized task update payload with a new update timestamp.
  */
-export function createTaskUpdatePayload(task: UpdateTask): Partial<TaskRow> {
+export function createTaskUpdatePayload(task: UpdateTask): any {
   return {
     ...(task.title !== undefined && { title: task.title.trim() }),
     ...(task.description !== undefined && { description: task.description.trim() }),
-    ...(task.dueDate !== undefined && { due_date: task.dueDate }),
+    ...(task.dueDate !== undefined && { dueDate: task.dueDate }),
     ...(task.priority !== undefined && { priority: task.priority }),
     ...(task.category !== undefined && { category: task.category }),
     ...(task.status !== undefined && { status: task.status }),
-    ...(task.sortOrder !== undefined && { sort_order: task.sortOrder }),
-    updated_at: new Date().toISOString(),
+    ...(task.sortOrder !== undefined && { sortOrder: task.sortOrder }),
+    updatedAt: new Date().toISOString(),
   };
 }
 
 /**
  * Creates a database payload for inserting a subtask.
- * @param subtask - Subtask data to transform.
+ * @param subtask Subtask data to transform.
  * @returns Normalized subtask insert payload.
  */
 export function createSubtaskInsertPayload(
   subtask: CreateSubtask,
-): Partial<SubtaskRow> {
+): any {
   return {
-    task_id: subtask.taskId,
+    taskId: subtask.taskId,
     title: subtask.title.trim(),
     ...(subtask.sortOrder !== undefined && {
-      sort_order: subtask.sortOrder,
+      sortOrder: subtask.sortOrder,
     }),
   };
 }
 
 /**
  * Creates a database payload containing the provided subtask updates.
- * @param subtask - Subtask fields to update.
+ * @param subtask Subtask fields to update.
  * @returns Normalized subtask update payload with a new update timestamp.
  */
 export function createSubtaskUpdatePayload(
   subtask: UpdateSubtask,
-): Partial<SubtaskRow> {
+): any {
   return {
     ...(subtask.title !== undefined && {
       title: subtask.title.trim(),
     }),
     ...(subtask.isCompleted !== undefined && {
-      is_completed: subtask.isCompleted,
+      isCompleted: subtask.isCompleted,
     }),
     ...(subtask.sortOrder !== undefined && {
-      sort_order: subtask.sortOrder,
+      sortOrder: subtask.sortOrder,
     }),
-    updated_at: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 
 /**
  * Creates a database row linking a task with a contact.
- * @param taskId - Identifier of the task.
- * @param contactId - Identifier of the assigned contact.
+ * @param taskId Identifier of the task.
+ * @param contactId Identifier of the assigned contact.
  * @returns Task assignment insert payload.
  */
 export function createTaskAssignmentRow(
@@ -87,15 +87,15 @@ export function createTaskAssignmentRow(
   contactId: string,
 ): Partial<TaskAssignmentRow> {
   return {
-    task_id: taskId,
-    contact_id: contactId,
+    taskId: taskId,
+    contactId: contactId,
   };
 }
 
 /**
  * Creates task assignment rows for multiple contacts.
- * @param taskId - Identifier of the task.
- * @param contactIds - Identifiers of the contacts to assign.
+ * @param taskId Identifier of the task.
+ * @param contactIds Identifiers of the contacts to assign.
  * @returns Task assignment insert payloads.
  */
 export function createTaskAssignmentRows(
