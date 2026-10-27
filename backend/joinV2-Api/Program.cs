@@ -4,6 +4,8 @@ using joinV2_Api.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,10 +53,23 @@ builder.Services.AddCors(options =>
 {
   options.AddPolicy("AllowAngular", policy =>
   {
-    policy.WithOrigins("http://localhost:4200")
+ 
+    policy.WithOrigins("http://localhost:4200", "https://dein-projekt.de")
           .AllowAnyHeader()
           .AllowAnyMethod()
           .AllowCredentials();
+  });
+});
+
+
+builder.Services.AddRateLimiter(options =>
+{
+  options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+  options.AddFixedWindowLimiter("AuthLimit", opt =>
+  {
+    opt.Window = TimeSpan.FromMinutes(1);
+    opt.PermitLimit = 5;
+    opt.QueueLimit = 0;
   });
 });
 
@@ -74,8 +89,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAngular");
 
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.Run();

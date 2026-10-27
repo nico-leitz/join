@@ -9,6 +9,7 @@ using joinV2_Api.Models;
 using joinV2_Api.DTOs;
 using joinV2_Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace joinV2_Api.Controllers
 {
@@ -30,12 +31,17 @@ namespace joinV2_Api.Controllers
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-      if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+      var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+
+      if (normalizedEmail.StartsWith("guest_"))
+        return BadRequest(new { message = "Email cannot start with 'guest_'." });
+
+      if (await _context.Users.AnyAsync(u => u.Email == normalizedEmail))
         return BadRequest(new { message = "Email is already taken." });
 
       var user = new User
       {
-        Email = dto.Email,
+        Email = normalizedEmail,
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
       };
       _context.Users.Add(user);
@@ -44,7 +50,7 @@ namespace joinV2_Api.Controllers
       {
         FirstName = dto.FirstName,
         LastName = dto.LastName,
-        Email = dto.Email,
+        Email = normalizedEmail,
         AuthUserId = user.Id,
         BadgeColor = "#000000",
         CreatedAt = DateTime.UtcNow,
@@ -56,10 +62,13 @@ namespace joinV2_Api.Controllers
       return Ok(new { message = "Registration successful." });
     }
 
+    [EnableRateLimiting("AuthLimit")]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
-      var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+      var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+      var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+
       if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         return Unauthorized(new { message = "Invalid email or password." });
 
@@ -69,13 +78,14 @@ namespace joinV2_Api.Controllers
       {
         HttpOnly = true,
         Secure = true,
-        SameSite = SameSiteMode.None,
+        SameSite = SameSiteMode.Strict,
         Expires = DateTime.UtcNow.AddDays(7)
       });
 
       return Ok(new { message = "Login successful." });
     }
 
+    [EnableRateLimiting("AuthLimit")]
     [HttpPost("guest-login")]
     public async Task<IActionResult> GuestLogin()
     {
@@ -94,7 +104,7 @@ namespace joinV2_Api.Controllers
       {
         HttpOnly = true,
         Secure = true,
-        SameSite = SameSiteMode.None,
+        SameSite = SameSiteMode.Strict,
         Expires = DateTime.UtcNow.AddDays(7)
       });
 
@@ -108,7 +118,7 @@ namespace joinV2_Api.Controllers
       {
         HttpOnly = true,
         Secure = true,
-        SameSite = SameSiteMode.None
+        SameSite = SameSiteMode.Strict
       });
       return Ok(new { message = "Logout successful." });
     }
