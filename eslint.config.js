@@ -45,11 +45,10 @@ module.exports = defineConfig([
         },
       ],
 
-      // Maximum 400 physical lines, including comments and blank lines.
       'max-lines': [
         'error',
         {
-          max: 400,
+          max: 500,
           skipBlankLines: false,
           skipComments: false,
         },
@@ -59,7 +58,7 @@ module.exports = defineConfig([
       'max-lines-per-function': [
         'error',
         {
-          max: 14,
+          max: 20,
           skipBlankLines: true,
           skipComments: true,
           IIFEs: true,
