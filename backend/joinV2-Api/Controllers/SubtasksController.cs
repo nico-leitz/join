@@ -4,10 +4,11 @@ using joinV2_Api.Data;
 using joinV2_Api.Models;
 using joinV2_Api.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace joinV2_Api.Controllers
 {
-  [Route("api/[controller]")]
+  [Route("api/subtasks")]
   [ApiController]
   [Authorize]
   public class SubtasksController : ControllerBase
@@ -19,10 +20,19 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
+    private Guid GetUserId()
+    {
+      var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+      return Guid.Parse(claim!.Value);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Subtask>>> GetSubtasks([FromQuery] Guid? taskId)
     {
-      var query = _context.Subtasks.AsQueryable();
+      var userId = GetUserId();
+      var userTaskIds = await _context.Tasks.Where(t => t.AuthUserId == userId).Select(t => t.Id).ToListAsync();
+
+      var query = _context.Subtasks.Where(s => userTaskIds.Contains(s.TaskId)).AsQueryable();
 
       if (taskId.HasValue)
       {
@@ -57,13 +67,15 @@ namespace joinV2_Api.Controllers
       var subtask = await _context.Subtasks.FindAsync(id);
       if (subtask == null) return NotFound();
 
-      subtask.Title = dto.Title;
-      subtask.IsCompleted = dto.IsCompleted;
-      subtask.SortOrder = dto.SortOrder;
+      if (!string.IsNullOrWhiteSpace(dto.Title)) subtask.Title = dto.Title;
+      if (dto.IsCompleted.HasValue) subtask.IsCompleted = dto.IsCompleted.Value;
+      if (dto.SortOrder.HasValue) subtask.SortOrder = dto.SortOrder.Value;
+
       subtask.UpdatedAt = DateTime.UtcNow;
 
       await _context.SaveChangesAsync();
-      return NoContent();
+
+      return Ok(subtask);
     }
 
     [HttpDelete("{id}")]

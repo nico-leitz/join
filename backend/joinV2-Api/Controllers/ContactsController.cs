@@ -4,7 +4,7 @@ using joinV2_Api.Data;
 using joinV2_Api.Models;
 using joinV2_Api.DTOs;
 using Microsoft.AspNetCore.Authorization;
-
+using System.Security.Claims;
 namespace joinV2_Api.Controllers
 {
   [Route("api/[controller]")]
@@ -19,16 +19,25 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
+    private Guid GetUserId()
+    {
+      var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+      return Guid.Parse(claim!.Value);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Contact>>> GetContacts()
     {
-      return await _context.Contacts.ToListAsync();
+      var userId = GetUserId();
+      return await _context.Contacts.Where(c => c.AuthUserId == userId).ToListAsync();
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Contact>> GetContactById(Guid id)
     {
-      var contact = await _context.Contacts.FindAsync(id);
+      var userId = GetUserId();
+      var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id && c.AuthUserId == userId);
+
       if (contact == null) return NotFound();
       return contact;
     }
@@ -38,12 +47,12 @@ namespace joinV2_Api.Controllers
     {
       var contact = new Contact
       {
+        AuthUserId = GetUserId(),
         FirstName = dto.FirstName,
         LastName = dto.LastName,
         Email = dto.Email,
         Phone = dto.Phone,
         BadgeColor = dto.BadgeColor,
-        AuthUserId = dto.AuthUserId,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
       };
@@ -57,7 +66,9 @@ namespace joinV2_Api.Controllers
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateContact(Guid id, UpdateContactDto dto)
     {
-      var contact = await _context.Contacts.FindAsync(id);
+      var userId = GetUserId();
+      var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id && c.AuthUserId == userId);
+
       if (contact == null) return NotFound();
 
       contact.FirstName = dto.FirstName;
@@ -65,21 +76,24 @@ namespace joinV2_Api.Controllers
       contact.Email = dto.Email;
       contact.Phone = dto.Phone;
       contact.BadgeColor = dto.BadgeColor;
-      contact.AuthUserId = dto.AuthUserId;
       contact.UpdatedAt = DateTime.UtcNow;
 
       await _context.SaveChangesAsync();
-      return NoContent();
+
+      return Ok(contact);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteContact(Guid id)
     {
-      var contact = await _context.Contacts.FindAsync(id);
+      var userId = GetUserId();
+      var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id && c.AuthUserId == userId);
+
       if (contact == null) return NotFound();
 
       _context.Contacts.Remove(contact);
       await _context.SaveChangesAsync();
+
       return NoContent();
     }
   }

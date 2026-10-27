@@ -73,6 +73,75 @@ namespace joinV2_Api.Controllers
       return Ok(new { message = "Login successful." });
     }
 
+    [HttpPost("guest-login")]
+    public async Task<IActionResult> GuestLogin()
+    {
+      var guestEmail = "guest@join-app.com";
+      var guestUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == guestEmail);
+
+      if (guestUser == null)
+      {
+        guestUser = new User { Email = guestEmail, PasswordHash = BCrypt.Net.BCrypt.HashPassword("guest123!") };
+        _context.Users.Add(guestUser);
+        await _context.SaveChangesAsync();
+      }
+
+      var oldTasks = await _context.Tasks.Where(t => t.AuthUserId == guestUser.Id).ToListAsync();
+      var oldTaskIds = oldTasks.Select(t => t.Id).ToList();
+
+      var oldSubtasks = await _context.Subtasks.Where(s => oldTaskIds.Contains(s.TaskId)).ToListAsync();
+      _context.Subtasks.RemoveRange(oldSubtasks);
+
+      var oldAssignments = await _context.TaskAssignments.Where(ta => oldTaskIds.Contains(ta.TaskId)).ToListAsync();
+      _context.TaskAssignments.RemoveRange(oldAssignments);
+
+      _context.Tasks.RemoveRange(oldTasks);
+
+      var oldContacts = await _context.Contacts.Where(c => c.AuthUserId == guestUser.Id).ToListAsync();
+      _context.Contacts.RemoveRange(oldContacts);
+
+      await _context.SaveChangesAsync();
+
+      var contact1 = new Contact { FirstName = "Anton", LastName = "Test", Email = "anton@test.com", BadgeColor = "#ff7a00", AuthUserId = guestUser.Id, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var contact2 = new Contact { FirstName = "Berta", LastName = "Example", Email = "berta@test.com", BadgeColor = "#9327ff", AuthUserId = guestUser.Id, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var contact3 = new Contact { FirstName = "Christian", LastName = "Code", Email = "christian@test.com", BadgeColor = "#fc71ff", AuthUserId = guestUser.Id, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      _context.Contacts.AddRange(contact1, contact2, contact3);
+
+      await _context.SaveChangesAsync();
+
+      var task1 = new TaskItem { Title = "Finish Backend API", Description = "Migrate all C# controllers and repositories.", Status = "todo", Priority = "urgent", Category = "Technical Task", SortOrder = 1, AuthUserId = guestUser.Id, DueDate = DateTime.UtcNow.AddDays(2), CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var task2 = new TaskItem { Title = "Test Angular Frontend", Description = "Check board and summary for missing data errors.", Status = "in-progress", Priority = "medium", Category = "User Story", SortOrder = 2, AuthUserId = guestUser.Id, DueDate = DateTime.UtcNow.AddDays(5), CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var task3 = new TaskItem { Title = "Design Adjustments", Description = "Verify CSS variables for the Dark Theme.", Status = "await-feedback", Priority = "low", Category = "Design", SortOrder = 3, AuthUserId = guestUser.Id, DueDate = DateTime.UtcNow.AddDays(10), CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var task4 = new TaskItem { Title = "Database Setup", Description = "Install and link PostgreSQL locally.", Status = "done", Priority = "urgent", Category = "Technical Task", SortOrder = 4, AuthUserId = guestUser.Id, DueDate = DateTime.UtcNow.AddDays(-2), CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      _context.Tasks.AddRange(task1, task2, task3, task4);
+
+      await _context.SaveChangesAsync();
+
+      var subtask1 = new Subtask { TaskId = task1.Id, Title = "Write Auth Controller", IsCompleted = true, SortOrder = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var subtask2 = new Subtask { TaskId = task1.Id, Title = "Implement JWT logic", IsCompleted = false, SortOrder = 2, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      var subtask3 = new Subtask { TaskId = task2.Id, Title = "Wire up Guest Login button", IsCompleted = false, SortOrder = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+      _context.Subtasks.AddRange(subtask1, subtask2, subtask3);
+
+      var assignment1 = new TaskAssignment { TaskId = task1.Id, ContactId = contact1.Id, CreatedAt = DateTime.UtcNow };
+      var assignment2 = new TaskAssignment { TaskId = task1.Id, ContactId = contact2.Id, CreatedAt = DateTime.UtcNow };
+      var assignment3 = new TaskAssignment { TaskId = task2.Id, ContactId = contact3.Id, CreatedAt = DateTime.UtcNow };
+      var assignment4 = new TaskAssignment { TaskId = task3.Id, ContactId = contact1.Id, CreatedAt = DateTime.UtcNow };
+      _context.TaskAssignments.AddRange(assignment1, assignment2, assignment3, assignment4);
+
+      await _context.SaveChangesAsync();
+
+      var token = GenerateJwtToken(guestUser);
+      Response.Cookies.Append("jwt", token, new CookieOptions
+      {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.None,
+        Expires = DateTime.UtcNow.AddDays(7)
+      });
+
+      return Ok(new { message = "Guest login successful." });
+    }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {
