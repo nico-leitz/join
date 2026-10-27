@@ -28,11 +28,11 @@ export function groupSubtasksByTaskId(subtasks: Subtask[]): Map<string, Subtask[
 export function groupContactIdsByTaskId(assignments: TaskAssignmentRow[]): Map<string, string[]> {
   const groupedContactIds = new Map<string, string[]>();
   for (const assignment of assignments) {
-    const contactIds = groupedContactIds.get(assignment.task_id);
+    const contactIds = groupedContactIds.get(assignment.taskId);
     if (contactIds) {
-      contactIds.push(assignment.contact_id);
+      contactIds.push(assignment.contactId);
     } else {
-      groupedContactIds.set(assignment.task_id, [assignment.contact_id]);
+      groupedContactIds.set(assignment.taskId, [assignment.contactId]);
     }
   }
   return groupedContactIds;
