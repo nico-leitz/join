@@ -9,6 +9,7 @@ import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { credentialsInterceptor } from './core/interceptors/credentials.interceptor';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,5 +17,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([credentialsInterceptor])),
     provideAppInitializer(() => inject(AuthService).initialize()),
+    provideHttpClient(withInterceptors([authInterceptor]))
   ],
 };

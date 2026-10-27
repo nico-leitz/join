@@ -53,9 +53,9 @@ export class AuthRepository {
   }
 
   /**
-   * Anonymous login is not supported by default in our custom C# Auth setup.
+   * Sends a request to establish an anonymous guest session.
    */
-  async signInAnonymously(): Promise<any> {
-    throw new Error('Anonymous login is currently not supported by the backend.');
+  async guestSignIn(): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.apiUrl}/guest-login`, {}));
   }
 }

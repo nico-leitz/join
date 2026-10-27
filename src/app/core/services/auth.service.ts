@@ -146,7 +146,6 @@ export class AuthService implements OnDestroy {
    * Releases resources on destruction.
    */
   ngOnDestroy(): void {
-    // Supabase listener removed
   }
 
   /**
@@ -189,12 +188,20 @@ export class AuthService implements OnDestroy {
   }
 
   /**
-   * Completes the anonymous sign-in operation.
+   * Completes the anonymous sign-in operation via the C# Backend.
    * @returns True when an authenticated guest session was applied.
    */
   private async performGuestSignIn(): Promise<boolean> {
-    this.errorState.set('Guest login is no longer supported by the custom backend.');
-    return false;
+    await this.authRepository.guestSignIn();
+
+    this.currentUserState.set({
+      id: 'guest-id',
+      email: 'guest@join-app.com',
+      fullName: 'Guest',
+      isAnonymous: true
+    });
+
+    return true;
   }
 
   /**
