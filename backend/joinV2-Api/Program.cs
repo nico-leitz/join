@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using joinV2_Api.Data;
+using joinV2_Api.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -60,6 +61,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IGuestDataService, GuestDataService>();
 
 var app = builder.Build();
 
