@@ -13,7 +13,7 @@ type SignUpPayload = Pick<SignUpCredentials, 'fullName' | 'email' | 'password'>;
 })
 export class AuthRepository {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'https://localhost:5001/api/auth';
+  private readonly apiUrl = 'https://localhost:7190/api/auth';
 
   /**
    * Registers a permanent user via the C# API.
