@@ -163,7 +163,7 @@ export class BoardDataStateService {
 
     this.allAssignments.update((assignments) => {
       return assignments.filter((assignment) => {
-        return assignment.task_id !== taskId;
+        return assignment.taskId !== taskId;
       });
     });
   }

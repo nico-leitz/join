@@ -202,7 +202,7 @@ export class Board implements OnInit {
    * @returns Subtasks belonging to the task.
    */
   getSubtasksForTask(taskId: string): Subtask[] {
-    return this.boardData.getSubtasks(taskId);
+    return this.allSubtasks().filter(s => s.taskId === taskId);
   }
 
   /**

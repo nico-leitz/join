@@ -94,9 +94,9 @@ export const MOCK_SUBTASKS: Subtask[] = [
 /** Assignment linking the task and contact fixtures. */
 export const MOCK_ASSIGNMENTS: TaskAssignmentRow[] = [
   {
-    task_id: 'task-1',
-    contact_id: 'c-1',
-    created_at: '',
+    taskId: 'task-1',
+    contactId: 'c-1',
+    createdAt: '',
   },
 ];
 
