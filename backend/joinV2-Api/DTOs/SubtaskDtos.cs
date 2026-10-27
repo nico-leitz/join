@@ -9,8 +9,8 @@ namespace joinV2_Api.DTOs
 
   public class UpdateSubtaskDto
   {
-    public string Title { get; set; } = string.Empty;
-    public bool IsCompleted { get; set; }
-    public int SortOrder { get; set; }
+    public string? Title { get; set; }
+    public bool? IsCompleted { get; set; }
+    public int? SortOrder { get; set; }
   }
 }
