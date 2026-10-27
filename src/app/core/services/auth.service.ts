@@ -1,4 +1,5 @@
-import { computed, Injectable, inject, OnDestroy, signal } from '@angular/core';
+import { computed, Injectable, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { LoginCredentials, SignUpCredentials } from '../models/auth.model';
 import { AuthRepository } from '../repositories/auth.repository';
 
@@ -23,7 +24,7 @@ export interface AppUser {
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService implements OnDestroy {
+export class AuthService {
   /** Repository used for backend authentication operations. */
   private readonly authRepository = inject(AuthRepository);
 
@@ -79,7 +80,7 @@ export class AuthService implements OnDestroy {
 
   /**
    * Registers a permanent user after privacy acceptance.
-   * @param credentials Registration credentials and privacy acceptance state.
+   * @param credentials - Registration credentials and privacy acceptance state.
    * @returns True when registration creates an authenticated session.
    */
   async signUp(credentials: SignUpCredentials): Promise<boolean> {
@@ -93,7 +94,7 @@ export class AuthService implements OnDestroy {
 
   /**
    * Signs in with email and password.
-   * @param credentials Credentials used for the login request.
+   * @param credentials - Credentials used for the login request.
    * @returns True when an authenticated session was established.
    */
   signIn(credentials: LoginCredentials): Promise<boolean> {
@@ -125,7 +126,7 @@ export class AuthService implements OnDestroy {
 
   /**
    * Queues a one-time mobile greeting for the next summary navigation.
-   * @param mode Greeting variant to queue.
+   * @param mode - Greeting variant to queue.
    */
   queueSummaryGreeting(mode: SummaryGreetingMode): void {
     this.summaryGreetingModeState.set(mode);
@@ -143,47 +144,53 @@ export class AuthService implements OnDestroy {
   }
 
   /**
-   * Releases resources on destruction.
-   */
-  ngOnDestroy(): void {
-  }
-
-  /**
    * Initializes session state exactly once.
    * @returns A promise that resolves after session restoration finishes.
    */
   private async initializeAuth(): Promise<void> {
+    await this.restoreSession();
     this.initializedState.set(true);
   }
 
   /**
+   * Fetches the current user from the C# backend using the HttpOnly cookie.
+   * @returns A promise resolving when the session is restored or cleared.
+   */
+  private async restoreSession(): Promise<void> {
+    try {
+      const apiUser = await this.authRepository.getCurrentUser();
+      
+      this.currentUserState.set({
+        id: apiUser.id,
+        email: apiUser.email ?? 'unknown@email.com',
+        fullName: apiUser.fullName ?? 'User',
+        isAnonymous: apiUser.isAnonymous ?? false
+      });
+    } catch {
+      this.currentUserState.set(null);
+    }
+  }
+
+  /**
    * Completes the registration operation.
-   * @param credentials Validated registration credentials.
+   * @param credentials - Validated registration credentials.
    * @returns True when the registration response contains an active session.
    * @throws The authentication error returned by the repository.
    */
   private async performSignUp(credentials: SignUpCredentials): Promise<boolean> {
     await this.authRepository.signUp(credentials);
-    
     return this.performSignIn({ email: credentials.email, password: credentials.password });
   }
 
   /**
    * Completes the password sign-in operation.
-   * @param credentials Credentials used for the login request.
+   * @param credentials - Credentials used for the login request.
    * @returns True when an authenticated session was applied.
    * @throws The authentication error returned by the repository.
    */
   private async performSignIn(credentials: LoginCredentials): Promise<boolean> {
     await this.authRepository.signIn(credentials);
-
-    this.currentUserState.set({
-      id: 'backend-user',
-      email: credentials.email,
-      fullName: credentials.email.split('@')[0], 
-      isAnonymous: false
-    });
-
+    await this.restoreSession();
     return true;
   }
 
@@ -193,14 +200,7 @@ export class AuthService implements OnDestroy {
    */
   private async performGuestSignIn(): Promise<boolean> {
     await this.authRepository.guestSignIn();
-
-    this.currentUserState.set({
-      id: 'guest-id',
-      email: 'guest@join-app.com',
-      fullName: 'Guest',
-      isAnonymous: true
-    });
-
+    await this.restoreSession();
     return true;
   }
 
@@ -211,14 +211,13 @@ export class AuthService implements OnDestroy {
   private async performSignOut(): Promise<boolean> {
     await this.authRepository.signOut();
     this.currentUserState.set(null);
-
     return true;
   }
 
   /**
    * Executes one authentication request at a time.
-   * @param request Authentication operation to execute.
-   * @param fallback Value returned when the request is blocked or fails.
+   * @param request - Authentication operation to execute.
+   * @param fallback - Value returned when the request is blocked or fails.
    * @returns Request result or the provided fallback value.
    */
   private async runRequest<T>(request: () => Promise<T>, fallback: T): Promise<T> {
@@ -230,8 +229,15 @@ export class AuthService implements OnDestroy {
 
     try {
       return await request();
-    } catch (error: any) {
-      const msg = error.error?.message || 'An error occurred during authentication.';
+    } catch (error: unknown) {
+      let msg = 'An error occurred during authentication.';
+      
+      if (error instanceof HttpErrorResponse && error.error?.message) {
+        msg = error.error.message;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
+
       this.errorState.set(msg);
       return fallback;
     } finally {
