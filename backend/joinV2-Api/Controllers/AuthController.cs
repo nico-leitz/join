@@ -93,9 +93,9 @@ namespace joinV2_Api.Controllers
 
       var claims = new[]
       {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email)
-            };
+          new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+          new Claim(JwtRegisteredClaimNames.Email, user.Email)
+      };
 
       var token = new JwtSecurityToken(
           claims: claims,
@@ -110,12 +110,12 @@ namespace joinV2_Api.Controllers
     [Authorize]
     public async Task<IActionResult> GetCurrentUser()
     {
+      var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(JwtRegisteredClaimNames.Sub);
 
-      var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-      if (userId == null)
-        return Unauthorized(new { message = "Invalid token." });
+      if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        return Unauthorized(new { message = "Invalid token claims." });
 
-      var user = await _context.Users.FindAsync(Guid.Parse(userId));
+      var user = await _context.Users.FindAsync(userId);
       if (user == null)
         return Unauthorized(new { message = "User not found." });
 
@@ -124,11 +124,12 @@ namespace joinV2_Api.Controllers
           ? $"{contact.FirstName} {contact.LastName}".Trim()
           : user.Email.Split('@')[0];
 
-      return Ok(new UserDto
+      return Ok(new
       {
-        Id = user.Id.ToString(),
-        Email = user.Email,
-        FullName = fullName
+        id = user.Id.ToString(),
+        email = user.Email,
+        fullName = fullName,
+        isAnonymous = false
       });
     }
   }
