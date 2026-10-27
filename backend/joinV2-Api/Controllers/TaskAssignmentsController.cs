@@ -19,12 +19,17 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
-    [HttpGet("task/{taskId}")]
-    public async Task<ActionResult<IEnumerable<TaskAssignment>>> GetAssignmentsForTask(Guid taskId)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<TaskAssignment>>> GetAssignments([FromQuery] Guid? taskId)
     {
-      return await _context.TaskAssignments
-          .Where(ta => ta.TaskId == taskId)
-          .ToListAsync();
+      var query = _context.TaskAssignments.AsQueryable();
+
+      if (taskId.HasValue)
+      {
+        query = query.Where(ta => ta.TaskId == taskId.Value);
+      }
+
+      return await query.ToListAsync();
     }
 
     [HttpPost]

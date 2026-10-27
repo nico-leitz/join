@@ -19,13 +19,17 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
-    [HttpGet("task/{taskId}")]
-    public async Task<ActionResult<IEnumerable<Subtask>>> GetSubtasksForTask(Guid taskId)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Subtask>>> GetSubtasks([FromQuery] Guid? taskId)
     {
-      return await _context.Subtasks
-          .Where(s => s.TaskId == taskId)
-          .OrderBy(s => s.SortOrder)
-          .ToListAsync();
+      var query = _context.Subtasks.AsQueryable();
+
+      if (taskId.HasValue)
+      {
+        query = query.Where(s => s.TaskId == taskId.Value);
+      }
+
+      return await query.OrderBy(s => s.SortOrder).ToListAsync();
     }
 
     [HttpPost]
