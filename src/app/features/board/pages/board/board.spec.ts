@@ -212,7 +212,7 @@ function shouldUpdateSubtaskLocally(): void {
 function shouldRemoveDeletedTaskRelations(): void {
   component.handleTaskDeleted('task-1');
   expect(component.allSubtasks().some(({ taskId }) => taskId === 'task-1')).toBe(false);
-  expect(component.allAssignments().some(({ task_id }) => task_id === 'task-1')).toBe(false);
+  expect(component.allAssignments().some(({ taskId }) => taskId === 'task-1')).toBe(false);
 }
 
 /** Verifies dialog synchronization and relation refresh after an update. */
