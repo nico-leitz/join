@@ -20,32 +20,69 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
-    private Guid GetUserId()
+    private Guid? GetUserId()
     {
       var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
-      return Guid.Parse(claim!.Value);
+      if (claim == null || !Guid.TryParse(claim.Value, out var parsedGuid)) return null;
+
+      return parsedGuid;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
+    public async Task<IActionResult> GetTasks()
     {
       var userId = GetUserId();
-      return await _context.Tasks.Where(t => t.AuthUserId == userId).ToListAsync();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var tasks = await _context.Tasks
+          .Where(t => t.AuthUserId == userId)
+          .Select(t => new
+          {
+            t.Id,
+            t.Title,
+            t.Description,
+            t.DueDate,
+            t.Priority,
+            t.Category,
+            t.Status,
+            t.SortOrder
+          })
+          .ToListAsync();
+
+      return Ok(tasks);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItem>> GetTaskById(Guid id)
+    public async Task<IActionResult> GetTaskById(Guid id)
     {
       var userId = GetUserId();
-      var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.AuthUserId == userId);
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var task = await _context.Tasks
+          .Where(t => t.Id == id && t.AuthUserId == userId)
+          .Select(t => new
+          {
+            t.Id,
+            t.Title,
+            t.Description,
+            t.DueDate,
+            t.Priority,
+            t.Category,
+            t.Status,
+            t.SortOrder
+          })
+          .FirstOrDefaultAsync();
 
       if (task == null) return NotFound();
-      return task;
+      return Ok(task);
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskItem>> CreateTask(CreateTaskDto dto)
+    public async Task<IActionResult> CreateTask(CreateTaskDto dto)
     {
+      var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
       DateTime utcDueDate = dto.DueDate.HasValue
           ? (dto.DueDate.Value.Kind == DateTimeKind.Unspecified
               ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
@@ -54,7 +91,7 @@ namespace joinV2_Api.Controllers
 
       var task = new TaskItem
       {
-        AuthUserId = GetUserId(),
+        AuthUserId = userId.Value,
         Title = dto.Title,
         Description = dto.Description ?? "",
         DueDate = utcDueDate,
@@ -69,15 +106,26 @@ namespace joinV2_Api.Controllers
       _context.Tasks.Add(task);
       await _context.SaveChangesAsync();
 
-      return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
+      return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, new
+      {
+        task.Id,
+        task.Title,
+        task.Description,
+        task.DueDate,
+        task.Priority,
+        task.Category,
+        task.Status,
+        task.SortOrder
+      });
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateTask(Guid id, UpdateTaskDto dto)
     {
       var userId = GetUserId();
-      var existingTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.AuthUserId == userId);
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
+      var existingTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.AuthUserId == userId);
       if (existingTask == null) return NotFound();
 
       if (!string.IsNullOrWhiteSpace(dto.Title)) existingTask.Title = dto.Title;
@@ -96,19 +144,29 @@ namespace joinV2_Api.Controllers
       }
 
       existingTask.UpdatedAt = DateTime.UtcNow;
-
       await _context.SaveChangesAsync();
 
-      return Ok(existingTask);
+      return Ok(new
+      {
+        existingTask.Id,
+        existingTask.Title,
+        existingTask.Description,
+        existingTask.DueDate,
+        existingTask.Priority,
+        existingTask.Category,
+        existingTask.Status,
+        existingTask.SortOrder
+      });
     }
 
     [HttpGet("{id}/contacts")]
-    public async Task<ActionResult<IEnumerable<Contact>>> GetContactsForTask(Guid id)
+    public async Task<IActionResult> GetContactsForTask(Guid id)
     {
       var userId = GetUserId();
-      var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.AuthUserId == userId);
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
-      if (task == null) return NotFound();
+      var taskExists = await _context.Tasks.AnyAsync(t => t.Id == id && t.AuthUserId == userId);
+      if (!taskExists) return NotFound();
 
       var contactIds = await _context.TaskAssignments
           .Where(ta => ta.TaskId == id)
@@ -116,7 +174,16 @@ namespace joinV2_Api.Controllers
           .ToListAsync();
 
       var contacts = await _context.Contacts
-          .Where(c => contactIds.Contains(c.Id))
+          .Where(c => contactIds.Contains(c.Id) && c.AuthUserId == userId)
+          .Select(c => new
+          {
+            c.Id,
+            c.FirstName,
+            c.LastName,
+            c.Email,
+            c.Phone,
+            c.BadgeColor
+          })
           .ToListAsync();
 
       return Ok(contacts);
@@ -126,8 +193,9 @@ namespace joinV2_Api.Controllers
     public async Task<IActionResult> DeleteTask(Guid id)
     {
       var userId = GetUserId();
-      var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.AuthUserId == userId);
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
+      var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.AuthUserId == userId);
       if (task == null) return NotFound();
 
       _context.Tasks.Remove(task);

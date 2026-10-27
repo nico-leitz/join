@@ -20,18 +20,21 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
-    private Guid GetUserId()
+    private Guid? GetUserId()
     {
       var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
-      return Guid.Parse(claim!.Value);
+      if (claim == null || !Guid.TryParse(claim.Value, out var parsedGuid)) return null;
+
+      return parsedGuid;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Subtask>>> GetSubtasks([FromQuery] Guid? taskId)
+    public async Task<IActionResult> GetSubtasks([FromQuery] Guid? taskId)
     {
       var userId = GetUserId();
-      var userTaskIds = await _context.Tasks.Where(t => t.AuthUserId == userId).Select(t => t.Id).ToListAsync();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
+      var userTaskIds = await _context.Tasks.Where(t => t.AuthUserId == userId).Select(t => t.Id).ToListAsync();
       var query = _context.Subtasks.Where(s => userTaskIds.Contains(s.TaskId)).AsQueryable();
 
       if (taskId.HasValue)
@@ -39,12 +42,23 @@ namespace joinV2_Api.Controllers
         query = query.Where(s => s.TaskId == taskId.Value);
       }
 
-      return await query.OrderBy(s => s.SortOrder).ToListAsync();
+      var subtasks = await query
+          .OrderBy(s => s.SortOrder)
+          .Select(s => new { s.Id, s.TaskId, s.Title, s.IsCompleted, s.SortOrder })
+          .ToListAsync();
+
+      return Ok(subtasks);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Subtask>> CreateSubtask(CreateSubtaskDto dto)
+    public async Task<IActionResult> CreateSubtask(CreateSubtaskDto dto)
     {
+      var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var ownsTask = await _context.Tasks.AnyAsync(t => t.Id == dto.TaskId && t.AuthUserId == userId);
+      if (!ownsTask) return NotFound(new { message = "Task not found or access denied." });
+
       var subtask = new Subtask
       {
         TaskId = dto.TaskId,
@@ -58,34 +72,46 @@ namespace joinV2_Api.Controllers
       _context.Subtasks.Add(subtask);
       await _context.SaveChangesAsync();
 
-      return Ok(subtask);
+      return Ok(new { subtask.Id, subtask.TaskId, subtask.Title, subtask.IsCompleted, subtask.SortOrder });
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateSubtask(Guid id, UpdateSubtaskDto dto)
     {
-      var subtask = await _context.Subtasks.FindAsync(id);
+      var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var subtask = await _context.Subtasks.FirstOrDefaultAsync(s => s.Id == id);
       if (subtask == null) return NotFound();
+
+      var ownsTask = await _context.Tasks.AnyAsync(t => t.Id == subtask.TaskId && t.AuthUserId == userId);
+      if (!ownsTask) return NotFound();
 
       if (!string.IsNullOrWhiteSpace(dto.Title)) subtask.Title = dto.Title;
       if (dto.IsCompleted.HasValue) subtask.IsCompleted = dto.IsCompleted.Value;
       if (dto.SortOrder.HasValue) subtask.SortOrder = dto.SortOrder.Value;
 
       subtask.UpdatedAt = DateTime.UtcNow;
-
       await _context.SaveChangesAsync();
 
-      return Ok(subtask);
+      return Ok(new { subtask.Id, subtask.TaskId, subtask.Title, subtask.IsCompleted, subtask.SortOrder });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteSubtask(Guid id)
     {
-      var subtask = await _context.Subtasks.FindAsync(id);
+      var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var subtask = await _context.Subtasks.FirstOrDefaultAsync(s => s.Id == id);
       if (subtask == null) return NotFound();
+
+      var ownsTask = await _context.Tasks.AnyAsync(t => t.Id == subtask.TaskId && t.AuthUserId == userId);
+      if (!ownsTask) return NotFound();
 
       _context.Subtasks.Remove(subtask);
       await _context.SaveChangesAsync();
+
       return NoContent();
     }
   }

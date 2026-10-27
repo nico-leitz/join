@@ -20,18 +20,21 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
-    private Guid GetUserId()
+    private Guid? GetUserId()
     {
       var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
-      return Guid.Parse(claim!.Value);
+      if (claim == null || !Guid.TryParse(claim.Value, out var parsedGuid)) return null;
+
+      return parsedGuid;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskAssignment>>> GetAssignments([FromQuery] Guid? taskId)
+    public async Task<IActionResult> GetAssignments([FromQuery] Guid? taskId)
     {
       var userId = GetUserId();
-      var userTaskIds = await _context.Tasks.Where(t => t.AuthUserId == userId).Select(t => t.Id).ToListAsync();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
+      var userTaskIds = await _context.Tasks.Where(t => t.AuthUserId == userId).Select(t => t.Id).ToListAsync();
       var query = _context.TaskAssignments.Where(ta => userTaskIds.Contains(ta.TaskId)).AsQueryable();
 
       if (taskId.HasValue)
@@ -39,23 +42,31 @@ namespace joinV2_Api.Controllers
         query = query.Where(ta => ta.TaskId == taskId.Value);
       }
 
-      return await query.ToListAsync();
+      var assignments = await query
+          .Select(ta => new { ta.TaskId, ta.ContactId })
+          .ToListAsync();
+
+      return Ok(assignments);
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskAssignment>> CreateAssignment(CreateTaskAssignmentDto dto)
+    public async Task<IActionResult> CreateAssignment(CreateTaskAssignmentDto dto)
     {
       var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
       var taskExists = await _context.Tasks.AnyAsync(t => t.Id == dto.TaskId && t.AuthUserId == userId);
-      if (!taskExists) return Forbid();
+      if (!taskExists) return NotFound(new { message = "Task not found or access denied." });
+
+      var contactExists = await _context.Contacts.AnyAsync(c => c.Id == dto.ContactId && c.AuthUserId == userId);
+      if (!contactExists) return NotFound(new { message = "Contact not found or access denied." });
 
       var existingAssignment = await _context.TaskAssignments
           .FirstOrDefaultAsync(ta => ta.TaskId == dto.TaskId && ta.ContactId == dto.ContactId);
 
       if (existingAssignment != null)
       {
-        return Ok(existingAssignment);
+        return Ok(new { existingAssignment.TaskId, existingAssignment.ContactId });
       }
 
       var assignment = new TaskAssignment
@@ -68,16 +79,17 @@ namespace joinV2_Api.Controllers
       _context.TaskAssignments.Add(assignment);
       await _context.SaveChangesAsync();
 
-      return Ok(assignment);
+      return Ok(new { assignment.TaskId, assignment.ContactId });
     }
 
     [HttpDelete("{taskId}/{contactId}")]
     public async Task<IActionResult> DeleteAssignment(Guid taskId, Guid contactId)
     {
       var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
 
       var taskExists = await _context.Tasks.AnyAsync(t => t.Id == taskId && t.AuthUserId == userId);
-      if (!taskExists) return Forbid();
+      if (!taskExists) return NotFound(new { message = "Task not found or access denied." });
 
       var assignment = await _context.TaskAssignments.FirstOrDefaultAsync(ta => ta.TaskId == taskId && ta.ContactId == contactId);
       if (assignment == null) return NotFound();
