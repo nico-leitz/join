@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { createTaskAssignmentRow } from '../mappers/task-payload.mapper';
 import { Contact } from '../models/contact.model';
 import { TaskAssignmentRow } from '../models/task-assignment.model';
@@ -16,12 +17,12 @@ export class TaskAssignmentRepository {
   private readonly http = inject(HttpClient);
 
   /** Base URLs for the API endpoints. */
-  private readonly apiUrl = 'https://localhost:7190/api/task-assignments';
-  private readonly tasksApiUrl = 'https://localhost:7190/api/tasks';
+  private readonly apiUrl = `${environment.apiUrl}/task-assignments`;
+  private readonly tasksApiUrl = `${environment.apiUrl}/tasks`;
 
   /**
    * Retrieves the full contacts assigned to a task.
-   * @param taskId Identifier of the task.
+   * @param taskId - Identifier of the task.
    * @returns Mapped contacts assigned to the task.
    */
   async getAssignedContacts(taskId: string): Promise<Contact[]> {
@@ -30,7 +31,7 @@ export class TaskAssignmentRepository {
 
   /**
    * Retrieves the identifiers of contacts assigned to a task.
-   * @param taskId Identifier of the task.
+   * @param taskId - Identifier of the task.
    * @returns Assigned contact identifiers.
    */
   async getAssignedContactIds(taskId: string): Promise<string[]> {
@@ -57,8 +58,8 @@ export class TaskAssignmentRepository {
 
   /**
    * Assigns a contact to a task.
-   * @param taskId Identifier of the task.
-   * @param contactId Identifier of the contact to assign.
+   * @param taskId - Identifier of the task.
+   * @param contactId - Identifier of the contact to assign.
    * @returns A promise that resolves after assignment.
    */
   async createTaskAssignment(taskId: string, contactId: string): Promise<void> {
@@ -68,8 +69,8 @@ export class TaskAssignmentRepository {
 
   /**
    * Assigns multiple contacts to a task.
-   * @param taskId Identifier of the task.
-   * @param contactIds Identifiers of the contacts to assign.
+   * @param taskId - Identifier of the task.
+   * @param contactIds - Identifiers of the contacts to assign.
    * @returns A promise that resolves after assignment.
    */
   async createTaskAssignments(taskId: string, contactIds: string[]): Promise<void> {
@@ -79,8 +80,8 @@ export class TaskAssignmentRepository {
 
   /**
    * Removes a contact assignment from a task.
-   * @param taskId Identifier of the task.
-   * @param contactId Identifier of the contact to unassign.
+   * @param taskId - Identifier of the task.
+   * @param contactId - Identifier of the contact to unassign.
    * @returns A promise that resolves after deletion.
    */
   async deleteTaskAssignment(taskId: string, contactId: string): Promise<void> {
@@ -89,8 +90,8 @@ export class TaskAssignmentRepository {
 
   /**
    * Removes multiple contact assignments from a task.
-   * @param taskId Identifier of the task.
-   * @param contactIds Identifiers of the contacts to unassign.
+   * @param taskId - Identifier of the task.
+   * @param contactIds - Identifiers of the contacts to unassign.
    * @returns A promise that resolves after deletion.
    */
   async deleteTaskAssignments(taskId: string, contactIds: string[]): Promise<void> {

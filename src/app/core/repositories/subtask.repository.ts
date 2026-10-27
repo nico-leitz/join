@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   createSubtaskInsertPayload,
   createSubtaskUpdatePayload,
@@ -18,11 +19,11 @@ export class SubtaskRepository {
   private readonly http = inject(HttpClient);
 
   /** Base URL for the subtasks API endpoint. */
-  private readonly apiUrl = 'https://localhost:7190/api/subtasks';
+  private readonly apiUrl = `${environment.apiUrl}/subtasks`;
 
   /**
    * Retrieves all subtasks belonging to a task.
-   * @param taskId Identifier of the parent task.
+   * @param taskId - Identifier of the parent task.
    * @returns Subtask rows ordered by position and creation time.
    */
   async getSubtaskRows(taskId: string): Promise<SubtaskRow[]> {
@@ -58,7 +59,7 @@ export class SubtaskRepository {
 
   /**
    * Creates a subtask in the database.
-   * @param subtask Subtask data to persist.
+   * @param subtask - Subtask data to persist.
    * @returns Created subtask row.
    */
   async createSubtask(subtask: CreateSubtask): Promise<SubtaskRow> {
@@ -68,8 +69,8 @@ export class SubtaskRepository {
 
   /**
    * Updates a subtask in the database.
-   * @param id Identifier of the subtask to update.
-   * @param subtask Subtask fields to persist.
+   * @param id - Identifier of the subtask to update.
+   * @param subtask - Subtask fields to persist.
    * @returns Updated subtask row.
    */
   async updateSubtask(id: string, subtask: UpdateSubtask): Promise<SubtaskRow> {
@@ -79,19 +80,18 @@ export class SubtaskRepository {
 
   /**
    * Updates a subtask while restricting the request to its parent task.
-   * @param taskId Identifier of the parent task.
-   * @param id Identifier of the subtask to update.
-   * @param subtask Subtask fields to persist.
+   * @param taskId - Identifier of the parent task.
+   * @param id - Identifier of the subtask to update.
+   * @param subtask - Subtask fields to persist.
    * @returns A promise that resolves after the update.
    */
   async updateTaskSubtask(taskId: string, id: string, subtask: UpdateSubtask): Promise<void> {
-    // In einer REST-API reicht das Update über die ID aus
     await this.updateSubtask(id, subtask);
   }
 
   /**
    * Deletes a subtask from the database.
-   * @param id Identifier of the subtask to delete.
+   * @param id - Identifier of the subtask to delete.
    * @returns A promise that resolves after deletion.
    */
   async deleteSubtask(id: string): Promise<void> {
@@ -100,8 +100,8 @@ export class SubtaskRepository {
 
   /**
    * Deletes selected subtasks belonging to a task.
-   * @param taskId Identifier of the parent task.
-   * @param subtaskIds Identifiers of the subtasks to delete.
+   * @param taskId - Identifier of the parent task.
+   * @param subtaskIds - Identifiers of the subtasks to delete.
    * @returns A promise that resolves after deletion.
    */
   async deleteTaskSubtasks(taskId: string, subtaskIds: string[]): Promise<void> {
