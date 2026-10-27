@@ -5,6 +5,7 @@ using joinV2_Api.Models;
 using joinV2_Api.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+
 namespace joinV2_Api.Controllers
 {
   [Route("api/[controller]")]
@@ -19,35 +20,70 @@ namespace joinV2_Api.Controllers
       _context = context;
     }
 
-    private Guid GetUserId()
+    private Guid? GetUserId()
     {
       var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
-      return Guid.Parse(claim!.Value);
+      if (claim == null || !Guid.TryParse(claim.Value, out var parsedGuid))
+      {
+        return null;
+      }
+      return parsedGuid;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Contact>>> GetContacts()
+    public async Task<IActionResult> GetContacts()
     {
       var userId = GetUserId();
-      return await _context.Contacts.Where(c => c.AuthUserId == userId).ToListAsync();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var contacts = await _context.Contacts
+          .Where(c => c.AuthUserId == userId)
+          .Select(c => new
+          {
+            c.Id,
+            c.FirstName,
+            c.LastName,
+            c.Email,
+            c.Phone,
+            c.BadgeColor
+          })
+          .ToListAsync();
+
+      return Ok(contacts);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Contact>> GetContactById(Guid id)
+    public async Task<IActionResult> GetContactById(Guid id)
     {
       var userId = GetUserId();
-      var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id && c.AuthUserId == userId);
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
+      var contact = await _context.Contacts
+          .Where(c => c.Id == id && c.AuthUserId == userId)
+          .Select(c => new
+          {
+            c.Id,
+            c.FirstName,
+            c.LastName,
+            c.Email,
+            c.Phone,
+            c.BadgeColor
+          })
+          .FirstOrDefaultAsync();
 
       if (contact == null) return NotFound();
-      return contact;
+      return Ok(contact);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Contact>> CreateContact(CreateContactDto dto)
+    public async Task<IActionResult> CreateContact(CreateContactDto dto)
     {
+      var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
       var contact = new Contact
       {
-        AuthUserId = GetUserId(),
+        AuthUserId = userId.Value,
         FirstName = dto.FirstName,
         LastName = dto.LastName,
         Email = dto.Email,
@@ -60,13 +96,23 @@ namespace joinV2_Api.Controllers
       _context.Contacts.Add(contact);
       await _context.SaveChangesAsync();
 
-      return CreatedAtAction(nameof(GetContactById), new { id = contact.Id }, contact);
+      return CreatedAtAction(nameof(GetContactById), new { id = contact.Id }, new
+      {
+        contact.Id,
+        contact.FirstName,
+        contact.LastName,
+        contact.Email,
+        contact.Phone,
+        contact.BadgeColor
+      });
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateContact(Guid id, UpdateContactDto dto)
     {
       var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
       var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id && c.AuthUserId == userId);
 
       if (contact == null) return NotFound();
@@ -80,13 +126,23 @@ namespace joinV2_Api.Controllers
 
       await _context.SaveChangesAsync();
 
-      return Ok(contact);
+      return Ok(new
+      {
+        contact.Id,
+        contact.FirstName,
+        contact.LastName,
+        contact.Email,
+        contact.Phone,
+        contact.BadgeColor
+      });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteContact(Guid id)
     {
       var userId = GetUserId();
+      if (userId == null) return Unauthorized(new { message = "Invalid token claims." });
+
       var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id && c.AuthUserId == userId);
 
       if (contact == null) return NotFound();
