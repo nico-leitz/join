@@ -105,5 +105,31 @@ namespace joinV2_Api.Controllers
 
       return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+
+      var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+      if (userId == null)
+        return Unauthorized(new { message = "Invalid token." });
+
+      var user = await _context.Users.FindAsync(Guid.Parse(userId));
+      if (user == null)
+        return Unauthorized(new { message = "User not found." });
+
+      var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.AuthUserId == user.Id);
+      var fullName = contact != null
+          ? $"{contact.FirstName} {contact.LastName}".Trim()
+          : user.Email.Split('@')[0];
+
+      return Ok(new UserDto
+      {
+        Id = user.Id.ToString(),
+        Email = user.Email,
+        FullName = fullName
+      });
+    }
   }
 }
