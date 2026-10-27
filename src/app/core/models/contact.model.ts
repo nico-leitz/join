@@ -1,15 +1,18 @@
 /**
  * Represents a contact row returned by the database.
  */
+/**
+ * Represents a contact row returned by the C# database.
+ */
 export interface ContactRow {
   /** Unique contact identifier. */
   id: string;
 
   /** Contact first name stored in the database. */
-  first_name: string;
+  firstName: string;
 
   /** Contact last name stored in the database. */
-  last_name: string;
+  lastName: string;
 
   /** Contact email address. */
   email: string;
@@ -18,18 +21,17 @@ export interface ContactRow {
   phone: string | null;
 
   /** Color used for the contact badge. */
-  badge_color: string;
+  badgeColor: string;
 
-  /** Related Supabase user identifier or null for unlinked contacts. */
-  auth_user_id: string | null;
+  /** Related user identifier or null for unlinked contacts. */
+  authUserId: string | null;
 
   /** ISO timestamp indicating when the contact was created. */
-  created_at: string;
+  createdAt: string;
 
   /** ISO timestamp indicating when the contact was last updated. */
-  updated_at: string;
+  updatedAt: string;
 }
-
 /**
  * Represents a contact within the application.
  */

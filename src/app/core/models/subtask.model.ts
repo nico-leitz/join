@@ -1,27 +1,30 @@
 /**
  * Represents a subtask row returned by the database.
  */
+/**
+ * Represents a subtask row returned by the C# database.
+ */
 export interface SubtaskRow {
   /** Unique subtask identifier. */
   id: string;
 
   /** Identifier of the task containing the subtask. */
-  task_id: string;
+  taskId: string;
 
   /** Subtask title. */
   title: string;
 
   /** Indicates whether the subtask is completed. */
-  is_completed: boolean;
+  isCompleted: boolean;
 
   /** Position of the subtask within its task. */
-  sort_order: number;
+  sortOrder: number;
 
   /** ISO timestamp indicating when the subtask was created. */
-  created_at: string;
+  createdAt: string;
 
   /** ISO timestamp indicating when the subtask was last updated. */
-  updated_at: string;
+  updatedAt: string;
 }
 
 /**

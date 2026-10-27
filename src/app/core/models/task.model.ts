@@ -16,6 +16,9 @@ export type TaskStatus = 'todo' | 'in_progress' | 'awaiting_feedback' | 'done';
 /**
  * Represents a task row returned by the database.
  */
+/**
+ * Represents a task row returned by the C# database.
+ */
 export interface TaskRow {
   /** Unique task identifier. */
   id: string;
@@ -27,7 +30,7 @@ export interface TaskRow {
   description: string;
 
   /** Due date stored by the database. */
-  due_date: string;
+  dueDate: string | null;
 
   /** Priority assigned to the task. */
   priority: TaskPriority;
@@ -39,13 +42,16 @@ export interface TaskRow {
   status: TaskStatus;
 
   /** Position of the task within its board column. */
-  sort_order: number;
+  sortOrder: number;
+  
+  /** Related user identifier. */
+  authUserId: string;
 
   /** ISO timestamp indicating when the task was created. */
-  created_at: string;
+  createdAt: string;
 
   /** ISO timestamp indicating when the task was last updated. */
-  updated_at: string;
+  updatedAt: string;
 }
 
 /**

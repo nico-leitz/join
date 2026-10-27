@@ -1,15 +1,18 @@
 /**
  * Represents a task assignment row returned by the database.
  */
+/**
+ * Represents a task assignment row returned by the C# database.
+ */
 export interface TaskAssignmentRow {
   /** Identifier of the assigned task. */
-  task_id: string;
+  taskId: string;
 
   /** Identifier of the assigned contact. */
-  contact_id: string;
+  contactId: string;
 
   /** ISO timestamp indicating when the assignment was created. */
-  created_at: string;
+  createdAt: string;
 }
 
 /**
