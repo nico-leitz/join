@@ -6,18 +6,14 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
 var jwtKey = builder.Configuration["Jwt:Key"];
-
 if (string.IsNullOrEmpty(jwtKey))
 {
-  throw new Exception("JWT Key wurde in den appsettings nicht gefunden!");
+  throw new Exception("Key wasnt found in appsettings");
 }
-
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
@@ -36,12 +32,15 @@ builder.Services.AddAuthentication(options =>
     ClockSkew = TimeSpan.Zero
   };
 
-
   options.Events = new JwtBearerEvents
   {
     OnMessageReceived = context =>
     {
-      context.Token = context.Request.Cookies["jwt"];
+      var token = context.Request.Cookies["jwt"];
+      if (!string.IsNullOrEmpty(token))
+      {
+        context.Token = token;
+      }
       return Task.CompletedTask;
     }
   };
@@ -71,13 +70,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAngular");
 
-app.UseAuthentication(); 
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();
