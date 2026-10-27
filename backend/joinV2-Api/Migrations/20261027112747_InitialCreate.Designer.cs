@@ -12,8 +12,8 @@ using joinV2_Api.Data;
 namespace joinV2_Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261027095735_UpdateUsersContext")]
-    partial class UpdateUsersContext
+    [Migration("20261027112747_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -114,6 +114,9 @@ namespace joinV2_Api.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthUserId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Category")
