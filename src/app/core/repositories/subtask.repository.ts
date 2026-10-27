@@ -31,10 +31,10 @@ export class SubtaskRepository {
     );
 
     return subtasks.sort((a, b) => {
-      if (a.sort_order !== b.sort_order) {
-        return a.sort_order - b.sort_order;
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
       }
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }
 
@@ -46,13 +46,13 @@ export class SubtaskRepository {
     const subtasks = await firstValueFrom(this.http.get<SubtaskRow[]>(this.apiUrl));
 
     return subtasks.sort((a, b) => {
-      if (a.task_id !== b.task_id) {
-        return a.task_id.localeCompare(b.task_id);
+      if (a.taskId !== b.taskId) {
+        return a.taskId.localeCompare(b.taskId);
       }
-      if (a.sort_order !== b.sort_order) {
-        return a.sort_order - b.sort_order;
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
       }
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }
 

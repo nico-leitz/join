@@ -37,10 +37,10 @@ export class TaskRepository {
     
     // Sortierung lokal in Angular übernehmen, um das exakte Supabase-Verhalten abzubilden
     return tasks.sort((a, b) => {
-      if (a.sort_order !== b.sort_order) {
-        return a.sort_order - b.sort_order;
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
       }
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }
 

@@ -37,7 +37,7 @@ export class TaskAssignmentRepository {
     const assignments = await firstValueFrom(
       this.http.get<TaskAssignmentRow[]>(`${this.apiUrl}?taskId=${taskId}`)
     );
-    return assignments.map(a => a.contact_id);
+    return assignments.map(a => a.contactId);
   }
 
   /**
@@ -48,10 +48,10 @@ export class TaskAssignmentRepository {
     const assignments = await firstValueFrom(this.http.get<TaskAssignmentRow[]>(this.apiUrl));
     
     return assignments.sort((a, b) => {
-      if (a.task_id !== b.task_id) {
-        return a.task_id.localeCompare(b.task_id);
+      if (a.taskId !== b.taskId) {
+        return a.taskId.localeCompare(b.taskId);
       }
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }
 

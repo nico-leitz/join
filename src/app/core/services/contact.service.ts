@@ -111,11 +111,11 @@ export class ContactService {
    */
   private createInsertPayload(contact: CreateContact, badgeColor: string): Partial<ContactRow> {
     return {
-      first_name: contact.firstName.trim(),
-      last_name: contact.lastName.trim(),
+      firstName: contact.firstName.trim(),
+      lastName: contact.lastName.trim(),
       email: contact.email.trim(),
       phone: contact.phone?.trim() || null,
-      badge_color: badgeColor,
+      badgeColor: badgeColor,
     };
   }
 
@@ -125,9 +125,9 @@ export class ContactService {
    * @returns Normalized contact update payload with a new update timestamp.
    */
   private createUpdatePayload(contact: UpdateContact): Partial<ContactRow> {
-    const payload: Partial<ContactRow> = { updated_at: new Date().toISOString() };
-    if (contact.firstName !== undefined) payload.first_name = contact.firstName.trim();
-    if (contact.lastName !== undefined) payload.last_name = contact.lastName.trim();
+    const payload: Partial<ContactRow> = { updatedAt: new Date().toISOString() };
+    if (contact.firstName !== undefined) payload.firstName = contact.firstName.trim();
+    if (contact.lastName !== undefined) payload.lastName = contact.lastName.trim();
     if (contact.email !== undefined) payload.email = contact.email.trim();
     if (contact.phone !== undefined) payload.phone = contact.phone?.trim() || null;
     return payload;
@@ -207,7 +207,7 @@ export class ContactService {
   private async getUsedBadgeColors(): Promise<Set<string>> {
     try {
       const contacts = await firstValueFrom(this.http.get<ContactRow[]>(this.apiUrl));
-      return new Set(contacts.map((contact) => contact.badge_color));
+      return new Set(contacts.map((contact) => contact.badgeColor));
     } catch {
       return new Set();
     }
@@ -254,14 +254,14 @@ export class ContactService {
   private mapContactRow(contactRow: ContactRow): Contact {
     return {
       id: contactRow.id,
-      authUserId: contactRow.auth_user_id || null,
-      firstName: contactRow.first_name,
-      lastName: contactRow.last_name,
+      authUserId: contactRow.authUserId || null,
+      firstName: contactRow.firstName,
+      lastName: contactRow.lastName,
       email: contactRow.email,
       phone: contactRow.phone,
-      badgeColor: contactRow.badge_color,
-      createdAt: contactRow.created_at,
-      updatedAt: contactRow.updated_at,
+      badgeColor: contactRow.badgeColor,
+      createdAt: contactRow.createdAt,
+      updatedAt: contactRow.updatedAt,
     };
   }
 
